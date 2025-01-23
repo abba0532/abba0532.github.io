@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>카지노 슬롯 머신</title>
+    <style>
+        * {
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #1c1c2c;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            overflow: hidden;
+        }
+        .slot-machine-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #2c2c4c, #1c1c3c);
+            border: 15px solid #3c3c5c;
+            border-radius: 30px;
+            padding: 30px 0;
+            box-shadow: 
+                0 20px 50px rgba(0,0,0,0.7), 
+                inset 0 0 100px rgba(0,0,0,0.5);
+            position: relative;
+            width: 90%;
+            max-width: 700px;
+        }
+        .slot-machine-frame {
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            right: -20px;
+            bottom: -20px;
+            border: 10px solid #4a4a6c;
+            border-radius: 40px;
+            box-shadow: 
+                inset 0 0 50px rgba(255,255,255,0.1),
+                0 0 30px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+        .slots {
+            display: flex;
+            justify-content: center;
+            background-color: #2a2a4a;
+            padding: 20px 10px;
+            border-radius: 15px;
+            box-shadow: 
+                inset 0 0 30px rgba(0,0,0,0.5),
+                0 10px 20px rgba(0,0,0,0.3);
+        }
+        .lever-container {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translate(0, -50%);
+            z-index: 10;
+        }
+        #lever {
+            width: 40px;
+            height: 250px;
+            background: linear-gradient(to right, #ff4500, #ff6347);
+            border-radius: 0 20px 20px 0;
+            cursor: pointer;
+            position: relative;
+            box-shadow: 
+                10px 0 20px rgba(0,0,0,0.5),
+                inset 5px 0 10px rgba(0,0,0,0.3);
+            transition: transform 0.2s ease;
+        }
+        #lever::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            width: 80px;
+            height: 40px;
+            background: linear-gradient(45deg, #ffaa00, #ff6b00);
+            border-radius: 10px;
+            transform: rotate(15deg);
+            box-shadow: 
+                0 5px 15px rgba(0,0,0,0.5),
+                inset 0 0 10px rgba(255,255,255,0.3);
+        }
+        .slot {
+            width: 120px;
+            height: 180px;
+            background: linear-gradient(to bottom, #e0e0f0, #c0c0d0);
+            margin: 0 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 72px;
+            font-weight: bold;
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 
+                0 10px 20px rgba(0,0,0,0.3),
+                inset 0 0 30px rgba(255,255,255,0.2);
+        }
+        .lever-track {
+            position: absolute;
+            right: 40px;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 300px;
+            width: 10px;
+            background-color: rgba(255,255,255,0.1);
+            border-radius: 5px;
+            z-index: 5;
+        }
+
+        @media (max-width: 768px) {
+            .lever-container {
+                right: 50%;
+                top: 100%;
+                transform: translate(50%, -50%);
+            }
+            #lever {
+                width: 30px;
+                height: 200px;
+                border-radius: 0 0 20px 20px;
+            }
+            #lever::before {
+                top: auto;
+                bottom: -20px;
+                right: -15px;
+                transform: rotate(-15deg);
+            }
+            .lever-track {
+                right: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="slot-machine-container">
+        <div class="slot-machine-frame"></div>
+        <div class="slots">
+            <div id="slot1" class="slot">0</div>
+            <div id="slot2" class="slot">0</div>
+            <div id="slot3" class="slot">0</div>
+        </div>
+        <div class="lever-track"></div>
+        <div class="lever-container">
+            <div id="lever"></div>
+        </div>
+    </div>
+
+    <script>
+        const slots = [
+            document.getElementById('slot1'),
+            document.getElementById('slot2'),
+            document.getElementById('slot3')
+        ];
+        const lever = document.getElementById('lever');
+        const leverContainer = document.querySelector('.lever-container');
+        const leverTrack = document.querySelector('.lever-track');
+        let isSpinning = false;
+        let isDragging = false;
+        let startY = 0;
+        let initialLeverPosition = 0;
+        let leverPosition = 0;
+
+        function getRandomNumber(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function spinSlot(slotElement, maxNumber) {
+            return new Promise(resolve => {
+                const spins = 30;
+                let currentSpin = 0;
+
+                slotElement.classList.add('spinning');
+
+                const spinInterval = setInterval(() => {
+                    const numbers = Array.from({length: 5}, () => getRandomNumber(1, maxNumber));
+                    slotElement.innerHTML = numbers.join('<br>');
+                    
+                    currentSpin++;
+
+                    if (currentSpin >= spins) {
+                        clearInterval(spinInterval);
+                        slotElement.classList.remove('spinning');
+                        slotElement.textContent = getRandomNumber(1, maxNumber);
+                        resolve();
+                    }
+                }, 50);
+            });
+        }
+
+        async function spinSlotMachine() {
+            if (isSpinning) return;
+            isSpinning = true;
+
+            await spinSlot(slots[0], 88);
+            await spinSlot(slots[1], 2);
+            await spinSlot(slots[2], 2);
+
+            isSpinning = false;
+            resetLever();
+        }
+
+        function resetLever() {
+            leverContainer.style.transform = `translate(0, -50%)`;
+            leverPosition = 0;
+        }
+
+        function startDrag(e) {
+            if (isSpinning) return;
+            
+            isDragging = true;
+            startY = e.type === 'mousedown' ? e.clientY : e.touches[0].clientY;
+            initialLeverPosition = leverPosition;
+            
+            document.addEventListener(
+                e.type === 'mousedown' ? 'mousemove' : 'touchmove', 
+                drag
+            );
+            document.addEventListener(
+                e.type === 'mousedown' ? 'mouseup' : 'touchend', 
+                stopDrag
+            );
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+
+            const currentY = e.type === 'mousemove' ? e.clientY : e.touches[0].clientY;
+            const deltaY = startY - currentY;
+            leverPosition = Math.min(Math.max(initialLeverPosition + deltaY, 0), 100);
+
+            leverContainer.style.transform = `translate(0, calc(-50% + ${leverPosition}px))`;
+
+            // Trigger spin when lever is pulled down significantly
+            if (leverPosition > 50 && !isSpinning) {
+                spinSlotMachine();
+            }
+        }
+
+        function stopDrag() {
+            isDragging = false;
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('touchmove', drag);
+            document.removeEventListener('mouseup', stopDrag);
+            document.removeEventListener('touchend', stopDrag);
+
+            // If not spun, reset lever
+            if (!isSpinning) {
+                resetLever();
+            }
+        }
+
+        lever.addEventListener('mousedown', startDrag);
+        lever.addEventListener('touchstart', startDrag, { passive: false });
+    </script>
+</body>
+</html>
